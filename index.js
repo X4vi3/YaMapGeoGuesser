@@ -18,13 +18,11 @@ function initMap() {
     });
 
     function loadPanorama(coords) {
-        panoramaContainer.innerHTML = '';
+        panoramaContainer.innerHTML = '<div id="overlay"></div>';
 
         ymaps.panorama.locate(coords, {
             layer: 'yandex#panorama',
-            // Расширенные опции поиска панорамы
-            maxCount: 1,
-            direction: [0, 0]
+            maxCount: 1
         }).done(
             function (panoramas) {
                 if (panoramas.length > 0) {
@@ -32,12 +30,25 @@ function initMap() {
                         panoramaContainer,
                         panoramas[0],
                         {
-                            controls: ['zoomControl', 'fullscreenControl', 'typeControl'],
+                            controls: [], // Убираем элементы управления
                             suppressMapOpenBlock: true
                         }
                     );
+
+                    // Сохраняем начальное направление камеры
+                    const initialDirection = player.getDirection();
+
+                    // Блокируем любые изменения направления
+                    player.events.add('directionchange', function () {
+                        player.setDirection(initialDirection);
+                    });
+
+                    // Блокируем изменения зума (если это необходимо)
+                    player.events.add('zoomchange', function () {
+                        player.setZoom(player.getZoom());
+                    });
+
                 } else {
-                    // Детальная диагностика отсутствия панорамы
                     ymaps.geocode(coords, {kind: 'locality'}).then(function (result) {
                         const geoObject = result.geoObjects.get(0);
                         const address = geoObject ? geoObject.getAddressLine() : 'Неизвестное место';

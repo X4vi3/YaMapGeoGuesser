@@ -21,6 +21,7 @@ h1 {
     height: 500px;
     background-color: #e0e0e0;
     margin-bottom: 20px;
+    position: relative;
 }
 
 .controls {
@@ -47,4 +48,14 @@ h1 {
 
 #loadPanorama:hover {
     background-color: #45a049;
+}
+
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0); /* Полностью прозрачный */
+    z-index: 10; /* Поверх панорамы */
 }

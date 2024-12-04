@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Яндекс Панорама</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
 	<link rel="stylesheet" href="styles.css">
+	<script src="https://api-maps.yandex.ru/2.1/?apikey=2eddd627-772e-4e06-bea5-54a9e81f6a3d&lang=ru_RU"
+			type="text/javascript"></script>
+<!--	<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&amp;apikey=<ваш API-ключ>" type="text/javascript"></script>-->
+	<script src="index.js"></script>
+
 </head>
 <body>
 <div class="container">
@@ -13,12 +18,15 @@
 		<div id="overlay"></div>
 	</div>
 	<div class="controls">
-		<input type="text" id="coordinateInput" placeholder="Введите координаты (широта, долгота)">
-		<button id="loadPanorama">Показать панораму</button>
+		<button id="loadRandomPanorama">Показать случайную панораму</button>
+		<button id="submitGuess">Подтвердить</button>
 	</div>
-</div>
+	<div class="coords">
+		<p>Координаты:</p>
+		<p id="coords"></p>
+	</div>
 
-<script src="https://api-maps.yandex.ru/2.1/?apikey=2eddd627-772e-4e06-bea5-54a9e81f6a3d&lang=ru_RU" type="text/javascript"></script>
-<script src="index.js"></script>
+</div>
+<div id="map"></div>
 </body>
 </html>

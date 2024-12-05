@@ -1,29 +1,30 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-	<title>Яндекс Панорама</title>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<title>Yandex Maps GeoGuesser</title>
+	<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
 
-	<link rel="stylesheet" href="styles.css">
+	<link href="styles.css" rel="stylesheet">
 	<script src="https://api-maps.yandex.ru/2.1/?apikey=2eddd627-772e-4e06-bea5-54a9e81f6a3d&lang=ru_RU"
 			type="text/javascript"></script>
-<!--	<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&amp;apikey=<ваш API-ключ>" type="text/javascript"></script>-->
+	<!--	<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&amp;apikey=<ваш API-ключ>" type="text/javascript"></script>-->
 	<script src="index.js"></script>
 
 </head>
 <body>
 <div class="container">
-	<h1>Яндекс Панорама</h1>
-	<div id="panorama" class="panorama-container">
+	<h1>Yandex Maps GeoGuesser</h1>
+	<div class="warning_container">
+	<span class="warning">Убедительная просьба: не используйте маркеры на панораме, иначе это приведёт к немедленному
+					завершению
+		  игры.</span>
+	</div>
+	<div class="panorama-container" id="panorama">
 		<div id="overlay"></div>
 	</div>
 	<div class="controls">
-		<button id="loadRandomPanorama">Показать случайную панораму</button>
-		<button id="submitGuess">Подтвердить</button>
-	</div>
-	<div class="coords">
-		<p>Координаты:</p>
-		<p id="coords"></p>
+		<button class="button" id="loadRandomPanorama">Показать случайную панораму</button>
+		<button class="button" id="submitGuess">Подтвердить</button>
 	</div>
 
 </div>

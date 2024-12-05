@@ -1,28 +1,95 @@
+const CONSTANTS = {
+    MAX_PANORAMA_ATTEMPTS: 100,
+    RANDOM_RADIUS_KM: 100,
+    SCORING_THRESHOLDS: [
+        {distance: 1, score: 5000},
+        {distance: 5, score: 4000},
+        {distance: 20, score: 3000},
+        {distance: 50, score: 2000},
+        {distance: 100, score: 1000},
+        {distance: Infinity, score: 500}
+    ]
+};
+
 const cities = [
-    {name: 'Москва', coords: [55.7558, 37.6173]},
-    // { name: 'Санкт-Петербург', coords: [59.9343, 30.3351] },
-    // { name: 'Екатеринбург', coords: [56.8389, 60.6057] },
-    // { name: 'Новосибирск', coords: [55.0084, 82.9357] },
-    // { name: 'Красноярск', coords: [56.0088, 92.8667] },
-    // { name: 'Иркутск', coords: [52.2897, 104.2895] },
-    // { name: 'Хабаровск', coords: [48.4802, 135.0722] },
-    // { name: 'Владивосток', coords: [43.1155, 131.8854] },
-    // { name: 'Казань', coords: [55.7961, 49.1064] },
-    // { name: 'Ростов-на-Дону', coords: [47.2313, 39.7233] }
+    {name: 'Москва', coords: [55.7558, 37.6173]}
+    // Остальные города закомментированы как в оригинале
 ];
 
 document.addEventListener('DOMContentLoaded', function () {
     ymaps.ready(initMap);
 });
 
-const submitBtn = document.getElementById('submitGuess');
-
 function initMap() {
     const panoramaContainer = document.getElementById('panorama');
     const loadRandomPanoramaButton = document.getElementById('loadRandomPanorama');
+    const submitBtn = document.getElementById('submitGuess');
+    const coordsDisplay = document.getElementById('coords');
 
-    let currentPanoramaCoords; // Храним текущие координаты панорамы
+    let currentPanoramaCoords;
     let myPlacemark;
+    let myMap;
+    let currentPanoramaPlayer;
+
+    // Функция для автоматического проигрыша при взаимодействии с маркерами
+    function handleMarkerPenalty(eventType) {
+        // Прекращаем дальнейшее взаимодействие с панорамой
+        if (currentPanoramaPlayer) {
+            currentPanoramaPlayer.destroy();
+        }
+
+        // Формируем штрафные координаты - максимально удаленные от правильного ответа
+        const penaltyCoords = [
+            currentPanoramaCoords[0] + CONSTANTS.PENALTY_COORDINATES_OFFSET,
+            currentPanoramaCoords[1] + CONSTANTS.PENALTY_COORDINATES_OFFSET
+        ];
+
+        // Показываем сообщение о нарушении правил
+        let penaltyMessage = '';
+        switch (eventType) {
+            case 'markerexpand':
+                penaltyMessage = 'Вы проиграли! Запрещено раскрывать маркеры.';
+                break;
+            case 'markercollapse':
+                penaltyMessage = 'Вы проиграли! Запрещено взаимодействовать с маркерами.';
+                break;
+            default:
+                penaltyMessage = 'Вы проиграли! Недопустимое взаимодействие с панорамой.';
+        }
+
+        // Визуализация штрафа
+        alert(penaltyMessage);
+
+        // Автоматическая установка метки на максимально удаленную точку
+        if (myPlacemark) {
+            myPlacemark.geometry.setCoordinates(penaltyCoords);
+        } else {
+            myPlacemark = new ymaps.Placemark(penaltyCoords, {
+                hintContent: 'Штрафная метка',
+                balloonContent: 'Метка установлена автоматически за нарушение правил'
+            }, {
+                iconLayout: 'default#image',
+                iconImageHref: 'imgs/mark.png'
+            });
+            myMap.geoObjects.add(myPlacemark);
+        }
+
+        // Принудительный вызов проверки ответа
+        submitBtn.click();
+    }
+
+    // Улучшенное управление состоянием кнопок
+    function updateButtonStates({
+                                    randomPanoramaEnabled = false,
+                                    submitEnabled = false
+                                } = {}) {
+        loadRandomPanoramaButton.disabled = !randomPanoramaEnabled;
+        submitBtn.disabled = !submitEnabled;
+
+        // Визуальное изменение состояния кнопок
+        loadRandomPanoramaButton.classList.toggle('disabled', !randomPanoramaEnabled);
+        submitBtn.classList.toggle('disabled', !submitEnabled);
+    }
 
     function kmToDegrees(km) {
         return km / 111.32;
@@ -41,17 +108,14 @@ function initMap() {
         return [newLat, newLon];
     }
 
-    loadRandomPanoramaButton.addEventListener('click', function () {
-        const randomCity = cities[Math.floor(Math.random() * cities.length)];
-        if (!randomCity) {
-            alert('Ты накодил какую-то хуйню!');
-            return;
+    function getScore(distance) {
+        for (let threshold of CONSTANTS.SCORING_THRESHOLDS) {
+            if (distance < threshold.distance) {
+                return threshold.score;
+            }
         }
-
-        const randomCoords = getRandomCoordinates(randomCity.coords[0], randomCity.coords[1], 100);
-        console.log(`Случайные координаты: ${randomCoords}`);
-        tryRandomPanorama(randomCoords);
-    });
+        return 500; // Минимальный балл по умолчанию
+    }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371;
@@ -64,36 +128,36 @@ function initMap() {
         return R * c;
     }
 
-    function getScore(distance) {
-        if (distance < 1) return 5000;
-        if (distance < 5) return 4000;
-        if (distance < 20) return 3000;
-        if (distance < 50) return 2000;
-        if (distance < 100) return 1000;
-        return 500;
-    }
-
     function tryRandomPanorama(coords, attempt = 1) {
-        const maxAttempts = 100;
-        if (attempt > maxAttempts) {
+        if (attempt > CONSTANTS.MAX_PANORAMA_ATTEMPTS) {
             alert('Не удалось найти панораму после нескольких попыток.');
+            updateButtonStates({randomPanoramaEnabled: true});
             return;
         }
 
         ymaps.panorama.locate(coords, {layer: 'yandex#panorama', maxCount: 1}).done(
             function (panoramas) {
                 if (panoramas.length > 0) {
-                    loadRandomPanoramaButton.disabled = true;
+                    updateButtonStates({randomPanoramaEnabled: false, submitEnabled: true});
                     panoramaContainer.innerHTML = '';
-                    const player = new ymaps.panorama.Player(panoramaContainer, panoramas[0], {
+                    const currentPanoramaPlayer = new ymaps.panorama.Player(panoramaContainer, panoramas[0], {
                         controls: [],
-                        suppressMapOpenBlock: true
+                        suppressMapOpenBlock: true,
+                    });
+
+                    // Добавляем обработчики событий для маркеров
+                    currentPanoramaPlayer.events.add([
+                        'markerexpand',
+                        'markercollapse'
+                    ], function (event) {
+                        const eventType = event.get('type');
+                        handleMarkerPenalty(eventType);
                     });
 
                     currentPanoramaCoords = panoramas[0].getPosition();
                     console.log('Начальные координаты панорамы:', currentPanoramaCoords);
 
-                    player.events.add('directionchange', function () {
+                    player.events.add('panoramachange', function () {
                         const currentPanorama = player.getPanorama();
                         if (currentPanorama) {
                             currentPanoramaCoords = currentPanorama.getPosition();
@@ -101,19 +165,34 @@ function initMap() {
                         }
                     });
                 } else {
-                    const newCoords = getRandomCoordinates(coords[0], coords[1], 1);
+                    // const newCoords = getRandomCoordinates(coords[0], coords[1], CONSTANTS.RANDOM_RADIUS_KM);
+                    const newCoords = getRandomCoordinates(coords[0], coords[1], 1); //Для отладки, чтобы быстрее
+                    // искалась панорама
                     tryRandomPanorama(newCoords, attempt + 1);
                 }
             },
             function (error) {
                 console.error('Ошибка загрузки панорамы:', error);
+                updateButtonStates({randomPanoramaEnabled: true});
             }
         );
     }
 
-    ymaps.ready(init);
-    let myMap;
-    let isSubmitDisabled = false;
+    loadRandomPanoramaButton.addEventListener('click', function () {
+        const randomCity = cities[Math.floor(Math.random() * cities.length)];
+        if (!randomCity) {
+            alert('Не удалось выбрать город. Пожалуйста, попробуйте еще раз.');
+            return;
+        }
+
+        const randomCoords = getRandomCoordinates(
+            randomCity.coords[0],
+            randomCity.coords[1],
+            CONSTANTS.RANDOM_RADIUS_KM
+        );
+        console.log(`Случайные координаты: ${randomCoords}`);
+        tryRandomPanorama(randomCoords);
+    });
 
     function init() {
         myMap = new ymaps.Map('map', {
@@ -122,10 +201,11 @@ function initMap() {
         }, {
             searchControlProvider: 'yandex#search'
         });
+
         myMap.events.add('click', function (e) {
-            if (isSubmitDisabled) return;
-            submitBtn.disabled = false;
             const coords = e.get('coords');
+            if (submitBtn.disabled) return;
+
             if (myPlacemark) {
                 myPlacemark.geometry.setCoordinates(coords);
             } else {
@@ -139,11 +219,10 @@ function initMap() {
                 });
                 myMap.geoObjects.add(myPlacemark);
             }
-            document.getElementById('coords').innerText = coords.join(', ');
         });
     }
 
-    document.getElementById('submitGuess').addEventListener('click', function () {
+    submitBtn.addEventListener('click', function () {
         if (!myPlacemark) {
             alert('Вы ещё не поставили метку на карте!');
             return;
@@ -154,9 +233,7 @@ function initMap() {
             return;
         }
 
-        loadRandomPanoramaButton.disabled = false;
         const userCoords = myPlacemark.geometry.getCoordinates();
-        // Создаём метку для правильного ответа и добавляем её на карту
         const rightMark = new ymaps.Placemark(currentPanoramaCoords, {
             hintContent: 'Правильный ответ',
             balloonContent: 'Это место соответствует правильному ответу'
@@ -166,9 +243,19 @@ function initMap() {
         });
         myMap.geoObjects.add(rightMark);
 
-        // Отключаем перетаскивание пользовательской метки
+        const line = new ymaps.Polyline(
+            [userCoords, currentPanoramaCoords],
+            {},
+            {
+                strokeColor: '#1900ff',
+                strokeWidth: 4,
+                strokeOpacity: 0.8
+            }
+        );
+        myMap.geoObjects.add(line);
+
         myPlacemark.options.set('draggable', false);
-        isSubmitDisabled = true;
+
         const distance = calculateDistance(
             userCoords[0], userCoords[1],
             currentPanoramaCoords[0], currentPanoramaCoords[1]
@@ -176,6 +263,10 @@ function initMap() {
         const score = getScore(distance);
 
         alert(`Расстояние: ${distance.toFixed(2)} км. Ваши баллы: ${score}`);
-        submitBtn.disabled = true;
+
+        updateButtonStates({randomPanoramaEnabled: true});
     });
+
+    ymaps.ready(init);
+    updateButtonStates({randomPanoramaEnabled: true});
 }

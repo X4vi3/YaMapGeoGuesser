@@ -15,9 +15,12 @@ document.addEventListener('DOMContentLoaded', function () {
     ymaps.ready(initMap);
 });
 
+const submitBtn = document.getElementById('submitGuess');
+
 function initMap() {
     const panoramaContainer = document.getElementById('panorama');
     const loadRandomPanoramaButton = document.getElementById('loadRandomPanorama');
+
     let currentPanoramaCoords; // Храним текущие координаты панорамы
     let myPlacemark;
 
@@ -80,6 +83,7 @@ function initMap() {
         ymaps.panorama.locate(coords, {layer: 'yandex#panorama', maxCount: 1}).done(
             function (panoramas) {
                 if (panoramas.length > 0) {
+                    loadRandomPanoramaButton.disabled = true;
                     panoramaContainer.innerHTML = '';
                     const player = new ymaps.panorama.Player(panoramaContainer, panoramas[0], {
                         controls: [],
@@ -108,22 +112,29 @@ function initMap() {
     }
 
     ymaps.ready(init);
+    let myMap;
+    let isSubmitDisabled = false;
 
     function init() {
-        const myMap = new ymaps.Map('map', {
+        myMap = new ymaps.Map('map', {
             center: [55.753994, 37.622093],
             zoom: 5
         }, {
             searchControlProvider: 'yandex#search'
         });
-
         myMap.events.add('click', function (e) {
+            if (isSubmitDisabled) return;
+            submitBtn.disabled = false;
             const coords = e.get('coords');
             if (myPlacemark) {
                 myPlacemark.geometry.setCoordinates(coords);
             } else {
-                myPlacemark = new ymaps.Placemark(coords, {}, {
-                    preset: 'islands#violetDotIconWithCaption',
+                myPlacemark = new ymaps.Placemark(coords, {
+                    hintContent: 'Ваш ответ',
+                    balloonContent: 'Вы указали это место как ответ'
+                }, {
+                    iconLayout: 'default#image',
+                    iconImageHref: 'imgs/mark.png',
                     draggable: true
                 });
                 myMap.geoObjects.add(myPlacemark);
@@ -143,7 +154,21 @@ function initMap() {
             return;
         }
 
+        loadRandomPanoramaButton.disabled = false;
         const userCoords = myPlacemark.geometry.getCoordinates();
+        // Создаём метку для правильного ответа и добавляем её на карту
+        const rightMark = new ymaps.Placemark(currentPanoramaCoords, {
+            hintContent: 'Правильный ответ',
+            balloonContent: 'Это место соответствует правильному ответу'
+        }, {
+            iconLayout: 'default#image',
+            iconImageHref: 'imgs/mark2.png'
+        });
+        myMap.geoObjects.add(rightMark);
+
+        // Отключаем перетаскивание пользовательской метки
+        myPlacemark.options.set('draggable', false);
+        isSubmitDisabled = true;
         const distance = calculateDistance(
             userCoords[0], userCoords[1],
             currentPanoramaCoords[0], currentPanoramaCoords[1]
@@ -151,5 +176,6 @@ function initMap() {
         const score = getScore(distance);
 
         alert(`Расстояние: ${distance.toFixed(2)} км. Ваши баллы: ${score}`);
+        submitBtn.disabled = true;
     });
 }

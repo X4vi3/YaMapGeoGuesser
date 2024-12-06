@@ -2,17 +2,17 @@ const CONSTANTS = {
     MAX_PANORAMA_ATTEMPTS: 100,
     RANDOM_RADIUS_KM: 100,
     SCORING_THRESHOLDS: [
-        {distance: 1, score: 5000},
-        {distance: 5, score: 4000},
-        {distance: 20, score: 3000},
-        {distance: 50, score: 2000},
-        {distance: 100, score: 1000},
-        {distance: Infinity, score: 500}
+        { distance: 1, score: 5000 },
+        { distance: 5, score: 4000 },
+        { distance: 20, score: 3000 },
+        { distance: 50, score: 2000 },
+        { distance: 100, score: 1000 },
+        { distance: Infinity, score: 500 }
     ]
 };
 
 const cities = [
-    {name: 'Москва', coords: [55.7558, 37.6173]}
+    { name: 'Москва', coords: [55.7558, 37.6173] }
     // Остальные города закомментированы как в оригинале
 ];
 
@@ -69,7 +69,8 @@ function initMap() {
                 balloonContent: 'Метка установлена автоматически за нарушение правил'
             }, {
                 iconLayout: 'default#image',
-                iconImageHref: 'imgs/mark.png'
+                iconImageHref: 'imgs/mark.png',
+                iconImageOffset: [-17, -40]
             });
             myMap.geoObjects.add(myPlacemark);
         }
@@ -80,9 +81,9 @@ function initMap() {
 
     // Улучшенное управление состоянием кнопок
     function updateButtonStates({
-                                    randomPanoramaEnabled = false,
-                                    submitEnabled = false
-                                } = {}) {
+        randomPanoramaEnabled = false,
+        submitEnabled = false
+    } = {}) {
         loadRandomPanoramaButton.disabled = !randomPanoramaEnabled;
         submitBtn.disabled = !submitEnabled;
 
@@ -131,14 +132,14 @@ function initMap() {
     function tryRandomPanorama(coords, attempt = 1) {
         if (attempt > CONSTANTS.MAX_PANORAMA_ATTEMPTS) {
             alert('Не удалось найти панораму после нескольких попыток.');
-            updateButtonStates({randomPanoramaEnabled: true});
+            updateButtonStates({ randomPanoramaEnabled: true });
             return;
         }
 
-        ymaps.panorama.locate(coords, {layer: 'yandex#panorama', maxCount: 1}).done(
+        ymaps.panorama.locate(coords, { layer: 'yandex#panorama', maxCount: 1 }).done(
             function (panoramas) {
                 if (panoramas.length > 0) {
-                    updateButtonStates({randomPanoramaEnabled: false, submitEnabled: true});
+                    updateButtonStates({ randomPanoramaEnabled: false, submitEnabled: true });
                     panoramaContainer.innerHTML = '';
                     const currentPanoramaPlayer = new ymaps.panorama.Player(panoramaContainer, panoramas[0], {
                         controls: [],
@@ -173,7 +174,7 @@ function initMap() {
             },
             function (error) {
                 console.error('Ошибка загрузки панорамы:', error);
-                updateButtonStates({randomPanoramaEnabled: true});
+                updateButtonStates({ randomPanoramaEnabled: true });
             }
         );
     }
@@ -215,6 +216,7 @@ function initMap() {
                 }, {
                     iconLayout: 'default#image',
                     iconImageHref: 'imgs/mark.png',
+                    iconImageOffset: [-17, -40],
                     draggable: true
                 });
                 myMap.geoObjects.add(myPlacemark);
@@ -239,7 +241,8 @@ function initMap() {
             balloonContent: 'Это место соответствует правильному ответу'
         }, {
             iconLayout: 'default#image',
-            iconImageHref: 'imgs/mark2.png'
+            iconImageHref: 'imgs/mark2.png',
+            iconImageOffset: [-16, -38]
         });
         myMap.geoObjects.add(rightMark);
 
@@ -264,9 +267,9 @@ function initMap() {
 
         alert(`Расстояние: ${distance.toFixed(2)} км. Ваши баллы: ${score}`);
 
-        updateButtonStates({randomPanoramaEnabled: true});
+        updateButtonStates({ randomPanoramaEnabled: true });
     });
 
     ymaps.ready(init);
-    updateButtonStates({randomPanoramaEnabled: true});
+    updateButtonStates({ randomPanoramaEnabled: true });
 }

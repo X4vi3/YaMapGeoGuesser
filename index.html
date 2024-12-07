@@ -9,10 +9,21 @@
 			type="text/javascript"></script>
 	<!--	<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&amp;apikey=<ваш API-ключ>" type="text/javascript"></script>-->
 	<script src="index.js"></script>
+	<script src="http://code.jquery.com/jquery-2.0.2.min.js"></script>
 
 </head>
 <body>
+<div class="b-popup" id="popup1">
+	<div class="b-popup-content">
+		Обратите внимание, это очень сырая версия GeoGuesser и панорама может генерироваться очень долго (ввиду наших
+		кривых ручек и не слишком обширного количества панорам Яндекса)
+		<div class="hide_popup">
+			<button class="button" onclick="PopUpHide()">Я понял</button>
+		</div>
+	</div>
+</div>
 <div class="container">
+
 	<h1>Yandex Maps GeoGuesser</h1>
 	<div class="warning_container">
 	<span class="warning">Убедительная просьба: не используйте маркеры на панораме, иначе это приведёт к немедленному
@@ -22,6 +33,11 @@
 	<div class="panorama-container" id="panorama">
 		<div id="overlay"></div>
 	</div>
+	<div class="score-board">
+		<p>Раунд: <span id="currentRound">1</span> / 5</p>
+		<p>Общий счёт: <span id="totalScore">0</span></p>
+	</div>
+
 	<div class="controls">
 		<button class="button" id="loadRandomPanorama">Показать случайную панораму</button>
 		<button class="button" id="submitGuess">Подтвердить</button>

@@ -1,6 +1,6 @@
 const CONSTANTS = {
-    MAX_PANORAMA_ATTEMPTS: 100,
-    RANDOM_RADIUS_KM: 100,
+    MAX_PANORAMA_ATTEMPTS: 300,
+    RANDOM_RADIUS_KM: 1,
     SCORING_THRESHOLDS: [
         { distance: 1, score: 5000 },
         { distance: 5, score: 4000 },
@@ -12,11 +12,20 @@ const CONSTANTS = {
 };
 
 const cities = [
-    { name: 'Москва', coords: [55.7558, 37.6173] }
-    // Остальные города закомментированы как в оригинале
+    {name: 'Москва', coords: [55.7558, 37.6173]},
+    {name: 'Санкт-Петербург', coords: [59.9343, 30.3351]},
+    {name: 'Новосибирск', coords: [55.0084, 82.9357]},
+    {name: 'Екатеринбург', coords: [56.8389, 60.6057]},
+    {name: 'Нижний Новгород', coords: [56.2965, 43.9362]},
+    {name: 'Челябинск', coords: [55.1644, 61.4368]},
+    {name: 'Самара', coords: [53.2001, 50.1525]},
+    {name: 'Казань', coords: [55.7887, 49.1242]},
+    {name: 'Ростов-на-Дону', coords: [47.2313, 39.7233]},
+    {name: 'Красноярск', coords: [56.0153, 92.8932]}
 ];
 
 document.addEventListener('DOMContentLoaded', function () {
+    PopUpShow();
     ymaps.ready(initMap);
 });
 
@@ -97,15 +106,22 @@ function initMap() {
     }
 
     function getRandomCoordinates(lat, lon, radiusKm) {
-        const radiusDeg = kmToDegrees(radiusKm);
-        const u = Math.random();
-        const v = Math.random();
-        const w = radiusDeg * Math.sqrt(u);
-        const t = 2 * Math.PI * v;
-        const x = w * Math.cos(t);
-        const y = w * Math.sin(t);
-        const newLat = lat + x;
-        const newLon = lon + y / Math.cos(lat * Math.PI / 180);
+        // Используем более надежный метод генерации случайных координат
+        const earthRadius = 6371; // радиус Земли в км
+
+        // Равномерное распределение по азимуту
+        const randomAzimuth = Math.random() * 2 * Math.PI;
+
+        // Равномерное распределение по радиусу с квадратным корнем для компенсации
+        const randomRadius = Math.sqrt(Math.random()) * radiusKm;
+
+        // Преобразование сферических координат
+        const dLat = randomRadius * Math.cos(randomAzimuth) / earthRadius * (180 / Math.PI);
+        const dLon = randomRadius * Math.sin(randomAzimuth) / (earthRadius * Math.cos(lat * Math.PI / 180)) * (180 / Math.PI);
+
+        const newLat = lat + dLat;
+        const newLon = lon + dLon;
+
         return [newLat, newLon];
     }
 
@@ -158,7 +174,7 @@ function initMap() {
                     currentPanoramaCoords = panoramas[0].getPosition();
                     console.log('Начальные координаты панорамы:', currentPanoramaCoords);
 
-                    player.events.add('panoramachange', function () {
+                    currentPanoramaPlayer.events.add('panoramachange', function () {
                         const currentPanorama = player.getPanorama();
                         if (currentPanorama) {
                             currentPanoramaCoords = currentPanorama.getPosition();
@@ -166,8 +182,8 @@ function initMap() {
                         }
                     });
                 } else {
-                    // const newCoords = getRandomCoordinates(coords[0], coords[1], CONSTANTS.RANDOM_RADIUS_KM);
-                    const newCoords = getRandomCoordinates(coords[0], coords[1], 1); //Для отладки, чтобы быстрее
+                    const newCoords = getRandomCoordinates(coords[0], coords[1], CONSTANTS.RANDOM_RADIUS_KM);
+                    //const newCoords = getRandomCoordinates(coords[0], coords[1], 1); //Для отладки, чтобы быстрее
                     // искалась панорама
                     tryRandomPanorama(newCoords, attempt + 1);
                 }
@@ -184,6 +200,10 @@ function initMap() {
         if (!randomCity) {
             alert('Не удалось выбрать город. Пожалуйста, попробуйте еще раз.');
             return;
+        }
+
+        if (line) {
+            myMap.geoObjects.remove(line);
         }
 
         const randomCoords = getRandomCoordinates(
@@ -224,6 +244,19 @@ function initMap() {
         });
     }
 
+// Переменные для подсчёта очков и текущего раунда
+    let currentRound = 1;
+    let totalScore = 0;
+    const maxRounds = 5;
+    let line;
+
+// Обновление интерфейса очков и раунда
+    function updateScoreBoard(line) {
+        document.getElementById('currentRound').textContent = currentRound;
+        document.getElementById('totalScore').textContent = totalScore;
+    }
+
+// Модификация кнопки подтверждения
     submitBtn.addEventListener('click', function () {
         if (!myPlacemark) {
             alert('Вы ещё не поставили метку на карте!');
@@ -246,7 +279,7 @@ function initMap() {
         });
         myMap.geoObjects.add(rightMark);
 
-        const line = new ymaps.Polyline(
+        line = new ymaps.Polyline(
             [userCoords, currentPanoramaCoords],
             {},
             {
@@ -267,9 +300,38 @@ function initMap() {
 
         alert(`Расстояние: ${distance.toFixed(2)} км. Ваши баллы: ${score}`);
 
-        updateButtonStates({ randomPanoramaEnabled: true });
+        // Добавляем очки за текущий раунд
+        totalScore += score;
+
+        // Проверяем конец игры
+        if (currentRound >= maxRounds) {
+            alert(`Игра завершена! Ваш итоговый счёт: ${totalScore}`);
+            updateButtonStates({randomPanoramaEnabled: false});
+            return;
+        }
+
+        // Переход к следующему раунду
+        currentRound++;
+        updateScoreBoard();
+
+        // Подготовка для следующего раунда
+        updateButtonStates({randomPanoramaEnabled: true});
     });
+
+// Инициализация доски очков
+    document.addEventListener('DOMContentLoaded', updateScoreBoard);
+
 
     ymaps.ready(init);
     updateButtonStates({ randomPanoramaEnabled: true });
+}
+
+//Функция отображения PopUp
+function PopUpShow() {
+    $("#popup1").show();
+}
+
+//Функция скрытия PopUp
+function PopUpHide() {
+    $("#popup1").hide();
 }

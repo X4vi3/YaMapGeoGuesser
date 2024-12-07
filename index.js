@@ -2,12 +2,12 @@ const CONSTANTS = {
     MAX_PANORAMA_ATTEMPTS: 300,
     RANDOM_RADIUS_KM: 1,
     SCORING_THRESHOLDS: [
-        { distance: 1, score: 5000 },
-        { distance: 5, score: 4000 },
-        { distance: 20, score: 3000 },
-        { distance: 50, score: 2000 },
-        { distance: 100, score: 1000 },
-        { distance: Infinity, score: 500 }
+        {distance: 1, score: 5000},
+        {distance: 5, score: 4000},
+        {distance: 20, score: 3000},
+        {distance: 50, score: 2000},
+        {distance: 100, score: 1000},
+        {distance: Infinity, score: 500}
     ]
 };
 
@@ -90,9 +90,9 @@ function initMap() {
 
     // Улучшенное управление состоянием кнопок
     function updateButtonStates({
-        randomPanoramaEnabled = false,
-        submitEnabled = false
-    } = {}) {
+                                    randomPanoramaEnabled = false,
+                                    submitEnabled = false
+                                } = {}) {
         loadRandomPanoramaButton.disabled = !randomPanoramaEnabled;
         submitBtn.disabled = !submitEnabled;
 
@@ -145,14 +145,14 @@ function initMap() {
     function tryRandomPanorama(coords, attempt = 1) {
         if (attempt > CONSTANTS.MAX_PANORAMA_ATTEMPTS) {
             alert('Не удалось найти панораму после нескольких попыток.');
-            updateButtonStates({ randomPanoramaEnabled: true });
+            updateButtonStates({randomPanoramaEnabled: true});
             return;
         }
 
-        ymaps.panorama.locate(coords, { layer: 'yandex#panorama', maxCount: 1 }).done(
+        ymaps.panorama.locate(coords, {layer: 'yandex#panorama', maxCount: 1}).done(
             function (panoramas) {
                 if (panoramas.length > 0) {
-                    updateButtonStates({ randomPanoramaEnabled: false, submitEnabled: true });
+                    updateButtonStates({randomPanoramaEnabled: false, submitEnabled: true});
                     panoramaContainer.innerHTML = '';
                     const currentPanoramaPlayer = new ymaps.panorama.Player(panoramaContainer, panoramas[0], {
                         controls: [],
@@ -187,7 +187,7 @@ function initMap() {
             },
             function (error) {
                 console.error('Ошибка загрузки панорамы:', error);
-                updateButtonStates({ randomPanoramaEnabled: true });
+                updateButtonStates({randomPanoramaEnabled: true});
             }
         );
     }
@@ -320,15 +320,15 @@ function initMap() {
 
 
     ymaps.ready(init);
-    updateButtonStates({ randomPanoramaEnabled: true });
+    updateButtonStates({randomPanoramaEnabled: true});
 }
 
 //Функция отображения PopUp
 function PopUpShow() {
-    $("#popup1").show();
+    $("#popup1").fadeIn(500);
 }
 
 //Функция скрытия PopUp
 function PopUpHide() {
-    $("#popup1").hide();
+    $("#popup1").fadeOut(500);
 }

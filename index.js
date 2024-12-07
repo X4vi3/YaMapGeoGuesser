@@ -101,9 +101,6 @@ function initMap() {
         submitBtn.classList.toggle('disabled', !submitEnabled);
     }
 
-    function kmToDegrees(km) {
-        return km / 111.32;
-    }
 
     function getRandomCoordinates(lat, lon, radiusKm) {
         // Используем более надежный метод генерации случайных координат
@@ -251,7 +248,7 @@ function initMap() {
     let line;
 
 // Обновление интерфейса очков и раунда
-    function updateScoreBoard(line) {
+    function updateScoreBoard() {
         document.getElementById('currentRound').textContent = currentRound;
         document.getElementById('totalScore').textContent = totalScore;
     }
